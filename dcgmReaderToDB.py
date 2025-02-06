@@ -135,7 +135,7 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
         # store all metrics inside 'metrics_measured'
         for fieldName, values, in gpuData.items():
             latest_value = values[-1] # get most recent value
-            if not latest_value.isBlank:
+            if latest_value not in [None, "", "N/A"]:
                 gpu_entry["metrics_measured"][fieldName] = latest_value.value
                 
         # ensure 'primary key' is unique (gpu_uuid & timestamp)
@@ -146,7 +146,6 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
         )
         
         print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['timestamp']}")
-            
 
     # # Print the dictionary
     # for gpuId in data:
