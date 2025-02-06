@@ -23,7 +23,7 @@ from datetime import datetime
 
 # connect to MongoDB Atlas
 mongo_uri = "mongodb+srv://shemilyshen:3g6wfTcdh7HS9ZGF@quokmvp.y18rg.mongodb.net/?retryWrites=true&w=majority&appName=QuokMVP"
-client = MongoClient(uri)
+client = MongoClient(mongo_uri)
 db = client["gpu_monitoring"]
 
 fieldsToGrab = [
