@@ -134,7 +134,7 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
         
         # store all metrics inside 'metrics_measured'
         for fieldName, values, in gpuData.items():
-            latest_value = values[-1] # get most recent value
+            latest_value = values # get most recent value
             if latest_value not in [None, "", "N/A"]:
                 gpu_entry["metrics_measured"][fieldName] = latest_value
                 
