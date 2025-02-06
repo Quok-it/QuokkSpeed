@@ -119,7 +119,7 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
     print("Data Retrieved: ", data)
     
     for gpuId, gpuData in data.items():
-        gpu_uuid = gpuData.get("DCGM_FI_DEV_UUID", None)
+        gpu_uuid = gpuData.get("uuid", None)
         print("gpu_uuid: ", gpu_uuid)
         if gpu_uuid is None:
             # UUID is missing --> error
