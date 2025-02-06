@@ -136,12 +136,12 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
         for fieldName, values, in gpuData.items():
             latest_value = values[-1] # get most recent value
             if latest_value not in [None, "", "N/A"]:
-                gpu_entry["metrics_measured"][fieldName] = latest_value.value
+                gpu_entry["metrics_measured"][fieldName] = latest_value
                 
         # ensure 'primary key' is unique (gpu_uuid & timestamp)
         db.gpu_polling.update_one(
-            {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]},  # query 
-            {"$set": gpu_entry},  # update 
+            {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]},  # query
+            {"$set": {"metrics_measured": gpu_entry["metrics_measured"]}},  # only update metrics
             upsert=True  # insert if not found
         )
         
