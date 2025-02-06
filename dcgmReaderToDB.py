@@ -19,7 +19,7 @@ import time
 
 # sending telemetry to MongoDB database
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timezone
 
 # connect to MongoDB Atlas
 mongo_uri = "mongodb+srv://shemilyshen:3g6wfTcdh7HS9ZGF@quokmvp.y18rg.mongodb.net/?retryWrites=true&w=majority&appName=QuokMVP"
@@ -128,7 +128,7 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
         # prep data structure
         gpu_entry = {
             "gpu_uuid" : gpu_uuid,
-            "timestamp" : datetime.now(datetime.timezone.utc),
+            "timestamp" : datetime.now(timezone.utc),
             "metrics_measured" : {}
         }
         
