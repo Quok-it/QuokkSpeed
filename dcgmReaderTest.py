@@ -92,15 +92,16 @@ class DataHandlerReader(DcgmReader):
                 print(out)
 
 '''
+    hostname         : Port for the nv-hostengine (default port 0000:5555)
     field_ids        : List of the field ids to publish. If it isn't specified, our default list is used.
     update_frequency : Frequency of update in microseconds. Defauls to 10 seconds or 10000000 microseconds
     keep_time        : Max time to keep data from NVML, in seconds. Default is 3600.0 (1 hour)
     ignores          : List of the field ids we want to query but not publish.
 '''
-def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata'):
+def DcgmReaderDictionary(hostname="0000:5555", field_ids=defaultFieldIds, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata'):
     # Instantiate a DcgmReader object
-    dr = DcgmReader(fieldIds=field_ids, updateFrequency=update_frequency, maxKeepAge=keep_time, ignoreList=ignores, fieldGroupName=field_groups)
-
+    dr = DcgmReader(hostname=hostname, fieldIds=field_ids, updateFrequency=update_frequency, maxKeepAge=keep_time, ignoreList=ignores, fieldGroupName=field_groups)
+    print("connecting to port " + hostname)
     # Get the default list of fields as a dictionary of dictionaries:
     # gpuId -> field name -> field value
     data = dr.GetLatestGpuValuesAsFieldNameDict()
