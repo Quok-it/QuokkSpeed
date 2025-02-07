@@ -108,19 +108,17 @@ class DataHandlerReader(DcgmReader):
     ignores          : List of the field ids we want to query but not publish.
 '''
 def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata'):
-    print("in DcgmReaderDictionary")
-    
     # Instantiate a DcgmReader object
     dr = DcgmReader(fieldIds=field_ids, updateFrequency=update_frequency, maxKeepAge=keep_time, ignoreList=ignores, fieldGroupName=field_groups)
 
     # Get the default list of fields as a dictionary of dictionaries:
     # gpuId -> field name -> field value
     data = dr.GetLatestGpuValuesAsFieldNameDict()
-    print("Data Retrieved: ", data)
+    # print("Data Retrieved: ", data)
     
     for gpuId, gpuData in data.items():
         gpu_uuid = gpuData.get("uuid", None)
-        print("gpu_uuid: ", gpu_uuid)
+        # print("gpu_uuid: ", gpu_uuid)
         if gpu_uuid is None:
             # UUID is missing --> error
             continue
