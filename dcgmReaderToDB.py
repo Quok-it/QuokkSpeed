@@ -102,6 +102,7 @@ class DataHandlerReader(DcgmReader):
                 print(out)
 
 '''
+    hostname         : Port for the nv-hostengine (port 0000:5555)
     field_ids        : List of the field ids to publish. If it isn't specified, our default list is used.
     update_frequency : Frequency of update in microseconds. Defauls to 10 seconds or 10000000 microseconds
     keep_time        : Max time to keep data from NVML, in seconds. Default is 3600.0 (1 hour)
