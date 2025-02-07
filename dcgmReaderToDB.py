@@ -17,12 +17,16 @@ from DcgmReader import *
 import dcgm_fields
 import time
 
+import os
+from dotenv import load_dotenv, dotenv_values
+load_dotenv()
+
 # sending telemetry to MongoDB database
 from pymongo import MongoClient
 from datetime import datetime, timezone
 
 # connect to MongoDB Atlas
-mongo_uri = "mongodb+srv://shemilyshen:3g6wfTcdh7HS9ZGF@quokmvp.y18rg.mongodb.net/?retryWrites=true&w=majority&appName=QuokMVP"
+mongo_uri = os.getenv('MONGO_DATABASE')
 client = MongoClient(mongo_uri)
 db = client["gpu_monitoring"]
 
