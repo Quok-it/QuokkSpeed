@@ -9,3 +9,4 @@ SEND TO MONGODB DATABASE:
 1. sudo apt install python3-pymongo
 2. sudo apt install python3-dnspython
 3. python3 dcgmReaderToDB.py
+4. sudo apt install python3-dotenv
