@@ -16,6 +16,9 @@
 from DcgmReader import *
 import dcgm_fields
 import time
+import socket
+import psutil
+import re
 
 fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NAME,
@@ -98,7 +101,7 @@ class DataHandlerReader(DcgmReader):
     keep_time        : Max time to keep data from NVML, in seconds. Default is 3600.0 (1 hour)
     ignores          : List of the field ids we want to query but not publish.
 '''
-def DcgmReaderDictionary(hostname="0000:5555", field_ids=defaultFieldIds, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata'):
+def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignores, field_groups):
     # Instantiate a DcgmReader object
     dr = DcgmReader(hostname=hostname, fieldIds=field_ids, updateFrequency=update_frequency, maxKeepAge=keep_time, ignoreList=ignores, fieldGroupName=field_groups)
     print("connecting to port " + hostname)
@@ -111,12 +114,26 @@ def DcgmReaderDictionary(hostname="0000:5555", field_ids=defaultFieldIds, update
         for fieldName in data[gpuId]:
             print("For gpu %s field %s=%s" % (str(gpuId), fieldName, data[gpuId][fieldName]))
 
+def getIp():
+    # Regex for wlp
+    wireless_pattern = re.compile(r'(wlan|wifi|^wl)', re.IGNORECASE)
+
+    for iface, addr_list in psutil.net_if_addrs().items():
+        if wireless_pattern.search(iface):
+            for addr in addr_list:
+                if addr.family == socket.AF_INET:
+                    return addr.address
+    return None
 
 def main(): 
     print('Quokking...')
+    hn = getIp()
+    print(hn)
+    hostname = hn + ":5555"
+    print(hostname)
     try:
         while True:
-            DcgmReaderDictionary(field_ids=fieldsToGrab)
+            DcgmReaderDictionary(hostname=hostname, field_ids=defaultFieldIds, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata')
             time.sleep(1)
     except KeyboardInterrupt:
         print('quokked!')
