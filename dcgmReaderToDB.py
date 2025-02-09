@@ -16,6 +16,9 @@
 from DcgmReader import *
 import dcgm_fields
 import time
+import psutil
+import socket
+import re
 
 import os
 from dotenv import load_dotenv, dotenv_values
@@ -112,9 +115,9 @@ class DataHandlerReader(DcgmReader):
     keep_time        : Max time to keep data from NVML, in seconds. Default is 3600.0 (1 hour)
     ignores          : List of the field ids we want to query but not publish.
 '''
-def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata'):
+def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignores, field_groups):
     # Instantiate a DcgmReader object
-    dr = DcgmReader(fieldIds=field_ids, updateFrequency=update_frequency, maxKeepAge=keep_time, ignoreList=ignores, fieldGroupName=field_groups)
+    dr = DcgmReader(hostname=hostname, fieldIds=field_ids, updateFrequency=update_frequency, maxKeepAge=keep_time, ignoreList=ignores, fieldGroupName=field_groups)
 
     # Get the default list of fields as a dictionary of dictionaries:
     # gpuId -> field name -> field value
@@ -155,12 +158,26 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
     #     for fieldName in data[gpuId]:
     #         print("For gpu %s field %s=%s" % (str(gpuId), fieldName, data[gpuId][fieldName]))
 
+def getIp():
+    # Regex for wlp
+    wireless_pattern = re.compile(r'(wlan|wifi|^wl)', re.IGNORECASE)
+
+    for iface, addr_list in psutil.net_if_addrs().items():
+        if wireless_pattern.search(iface):
+            for addr in addr_list:
+                if addr.family == socket.AF_INET:
+                    return addr.address
+    return None
 
 def main(): 
     print('Quokking...')
+    hn = getIp()
+    print(hn)
+    hostname = hn + ":5555"
+    print(hostname)
     try:
         while True:
-            DcgmReaderDictionary(field_ids=fieldsToGrab)
+            DcgmReaderDictionary(hostname=hostname, field_ids=fieldsToGrab, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata')
             time.sleep(1)
     except KeyboardInterrupt:
         print('quokked!')

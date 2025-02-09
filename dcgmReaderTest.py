@@ -133,7 +133,7 @@ def main():
     print(hostname)
     try:
         while True:
-            DcgmReaderDictionary(hostname=hostname, field_ids=defaultFieldIds, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata')
+            DcgmReaderDictionary(hostname=hostname, field_ids=fieldsToGrab, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata')
             time.sleep(1)
     except KeyboardInterrupt:
         print('quokked!')
