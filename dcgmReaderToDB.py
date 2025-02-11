@@ -66,7 +66,11 @@ fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NVLINK_CRC_FLIT_ERROR_COUNT_TOTAL,
     dcgm_fields.DCGM_FI_DEV_NVLINK_CRC_DATA_ERROR_COUNT_TOTAL,
     dcgm_fields.DCGM_FI_DEV_NVLINK_REPLAY_ERROR_COUNT_TOTAL,
-    dcgm_fields.DCGM_FI_DEV_NVLINK_RECOVERY_ERROR_COUNT_TOTAL
+    dcgm_fields.DCGM_FI_DEV_NVLINK_RECOVERY_ERROR_COUNT_TOTAL,
+    dcgm_fields.DCGM_FI_DEV_FB_TOTAL,   #framebuffer total
+    dcgm_fields.DCGM_FI_DEV_FB_FREE,    #framebuffer free
+    dcgm_fields.DCGM_FI_DEV_FB_USED,    #framebuffer used
+    dcgm_fields.DCGM_FI_DEV_FB_RESERVED #framebuffer reserved
 ]
 
 class FieldHandlerReader(DcgmReader):
