@@ -145,6 +145,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
         # store all metrics inside 'metrics_measured'
         for fieldName, values, in gpuData.items():
             latest_value = values # get most recent value
+            print(fieldName)
             if latest_value not in [None, "", "N/A"]:
                 gpu_entry["metrics_measured"][fieldName] = latest_value
                 
