@@ -15,7 +15,7 @@ import getpass
 import os
 import re
 import string
-import apps
+from python3 import apps
 import shlex
 import dcgm_structs
 import dcgm_agent

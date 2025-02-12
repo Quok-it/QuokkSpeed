@@ -1,0 +1,4 @@
+dnspython==2.7.0
+psutil==6.1.1
+pymongo==4.11.1
+python-dotenv==1.0.1

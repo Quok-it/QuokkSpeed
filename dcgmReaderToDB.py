@@ -1,4 +1,4 @@
-# RUN USING: python3 dcgmReaderTest.py
+# RUN USING: python3 dcgmReaderToDB.py
 
 # Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
 #
@@ -16,6 +16,9 @@
 from DcgmReader import *
 import dcgm_fields
 import time
+import psutil
+import socket
+import re
 
 import os
 from dotenv import load_dotenv, dotenv_values
@@ -63,7 +66,11 @@ fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NVLINK_CRC_FLIT_ERROR_COUNT_TOTAL,
     dcgm_fields.DCGM_FI_DEV_NVLINK_CRC_DATA_ERROR_COUNT_TOTAL,
     dcgm_fields.DCGM_FI_DEV_NVLINK_REPLAY_ERROR_COUNT_TOTAL,
-    dcgm_fields.DCGM_FI_DEV_NVLINK_RECOVERY_ERROR_COUNT_TOTAL
+    dcgm_fields.DCGM_FI_DEV_NVLINK_RECOVERY_ERROR_COUNT_TOTAL,
+    dcgm_fields.DCGM_FI_DEV_FB_TOTAL,   #framebuffer total
+    dcgm_fields.DCGM_FI_DEV_FB_FREE,    #framebuffer free
+    dcgm_fields.DCGM_FI_DEV_FB_USED,    #framebuffer used
+    dcgm_fields.DCGM_FI_DEV_FB_RESERVED #framebuffer reserved
 ]
 
 class FieldHandlerReader(DcgmReader):
@@ -112,9 +119,9 @@ class DataHandlerReader(DcgmReader):
     keep_time        : Max time to keep data from NVML, in seconds. Default is 3600.0 (1 hour)
     ignores          : List of the field ids we want to query but not publish.
 '''
-def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata'):
+def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignores, field_groups):
     # Instantiate a DcgmReader object
-    dr = DcgmReader(fieldIds=field_ids, updateFrequency=update_frequency, maxKeepAge=keep_time, ignoreList=ignores, fieldGroupName=field_groups)
+    dr = DcgmReader(hostname=hostname, fieldIds=field_ids, updateFrequency=update_frequency, maxKeepAge=keep_time, ignoreList=ignores, fieldGroupName=field_groups)
 
     # Get the default list of fields as a dictionary of dictionaries:
     # gpuId -> field name -> field value
@@ -150,9 +157,20 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
         # store all metrics inside 'metrics_measured'
         for fieldName, values, in gpuData.items():
             latest_value = values # get most recent value
+            print(fieldName)
             if latest_value not in [None, "", "N/A"]:
                 gpu_entry["metrics_measured"][fieldName] = latest_value
-                
+        
+        # Compute FB_UTIL (Framebuffer Utilization)
+        fb_used = gpu_entry["metrics_measured"].get("fb_used", None)
+        fb_total = gpu_entry["metrics_measured"].get("fb_total", None)
+        # print(f"fb_used: ", fb_used)
+        # print(f"fb_total: ", fb_total)
+
+        # print(f"fb_util Calculated: ", (100 * round(fb_used / fb_total, 4)))
+        if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
+            gpu_entry["metrics_measured"]["fb_util"] = (100 * round(fb_used / fb_total, 4))  # Store as percentage (rounded)
+        
         # ensure 'primary key' is unique (gpu_uuid & timestamp)
         db.gpu_polling.update_one(
             {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]}, 
@@ -170,12 +188,26 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
     #     for fieldName in data[gpuId]:
     #         print("For gpu %s field %s=%s" % (str(gpuId), fieldName, data[gpuId][fieldName]))
 
+def getIp():
+    # Regex for wlp
+    wireless_pattern = re.compile(r'(wlan|wifi|^wl)', re.IGNORECASE)
+
+    for iface, addr_list in psutil.net_if_addrs().items():
+        if wireless_pattern.search(iface):
+            for addr in addr_list:
+                if addr.family == socket.AF_INET:
+                    return addr.address
+    return None
 
 def main(): 
     print('Quokking...')
+    hn = getIp()
+    print(hn)
+    hostname = hn + ":5555"
+    print(hostname)
     try:
         while True:
-            DcgmReaderDictionary(field_ids=fieldsToGrab)
+            DcgmReaderDictionary(hostname=hostname, field_ids=fieldsToGrab, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata')
             time.sleep(1)
     except KeyboardInterrupt:
         print('quokked!')

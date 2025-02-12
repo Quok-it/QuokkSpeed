@@ -21,7 +21,7 @@ import traceback
 from collections import namedtuple
 import stat
 import time
-import apps
+from python3 import apps
 import re
 import ctypes
 import sys
@@ -31,7 +31,7 @@ from progress_printer import *
 import logger
 import option_parser
 import utils
-import apps
+from python3 import apps
 import dcgm_agent
 import dcgm_structs
 import dcgm_agent_internal

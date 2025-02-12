@@ -20,7 +20,7 @@ import trace
 import zipfile
 import string
 import re
-import libs_3rdparty.colorama as colorama
+import colorama
 import dcgm_structs
 import dcgm_agent_internal
 import option_parser

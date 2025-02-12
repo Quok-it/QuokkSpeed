@@ -36,7 +36,7 @@ import option_parser
 import subprocess
 import shlex
 import pydcgm
-import apps
+from python3 import apps
 import logger
 import json
 from datetime import date, timedelta
