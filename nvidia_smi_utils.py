@@ -14,8 +14,7 @@
 import threading
 import xml.etree.ElementTree as ET
 import time
-
-import option_parser
+from python3 import apps
 import logger
 import pydcgm
 import dcgm_structs

@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # Library for executing processes
-from apps.app_runner import *
+from .app_runner import *
 
 # Libraries that wrap common command line applications
 # and provide easier to use python interface
-from apps.dcgm_stub_runner_app import *
-from apps.nv_hostengine_app import *
-from apps.dcgmi_app import *
-from apps.dcgm_diag_unittests_app import *
-from apps.dcgm_unittests_app import *
-from apps.cuda_ctx_create_app import *
-from apps.nvidia_smi_app import *
-from apps.lsof_app import *
-from apps.lspci_app import *
-from apps.xid_app import *
-from apps.cuda_assert_app import *
-from apps.p2p_bandwidth import *
-from apps.nvpex2 import *
-from apps.dcgmproftester_app import *
+from .dcgm_stub_runner_app import *
+from .nv_hostengine_app import *
+from .dcgmi_app import *
+from .dcgm_diag_unittests_app import *
+from .dcgm_unittests_app import *
+from .cuda_ctx_create_app import *
+from .nvidia_smi_app import *
+from .lsof_app import *
+from .lspci_app import *
+from .xid_app import *
+from .cuda_assert_app import *
+from .p2p_bandwidth import *
+from .nvpex2 import *
+from .dcgmproftester_app import *

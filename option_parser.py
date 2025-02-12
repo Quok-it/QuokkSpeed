@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from optparse import OptionParser, OptionGroup
-import apps
+from python3 import apps
 import utils
 import sys
 import test_utils
