@@ -147,30 +147,21 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
             "metrics_measured": {}
         }
         
-        # prep data structure
-        gpu_entry = {
-            "gpu_uuid" : gpu_uuid,
-            "timestamp" : datetime.now(timezone.utc),
-            "metrics_measured" : {}
-        }
-        
         # store all metrics inside 'metrics_measured'
         for fieldName, values, in gpuData.items():
             latest_value = values # get most recent value
             print(fieldName)
             if latest_value not in [None, "", "N/A"]:
                 gpu_entry["metrics_measured"][fieldName] = latest_value
-        
-        # Compute FB_UTIL (Framebuffer Utilization)
-        fb_used = gpu_entry["metrics_measured"].get("fb_used", None)
-        fb_total = gpu_entry["metrics_measured"].get("fb_total", None)
-        # print(f"fb_used: ", fb_used)
-        # print(f"fb_total: ", fb_total)
 
-        # print(f"fb_util Calculated: ", (100 * round(fb_used / fb_total, 4)))
-        if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
-            gpu_entry["metrics_measured"]["fb_util"] = (100 * round(fb_used / fb_total, 4))  # Store as percentage (rounded)
-        
+        # Compute FB_UTIL (Framebuffer Utilization)
+        fb_used = gpu_entry["metrics_measured"].get("framebuffer_used", None)
+        fb_total = gpu_entry["metrics_measured"].get("framebuffer_total", None)
+
+        print(f"FB_UTIL Calculated: ", round(fb_used / fb_total))
+        # if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
+        #     gpu_entry["metrics_measured"]["FB_UTIL"] = round(fb_used / fb_total)  # Store as percentage (rounded)
+
         # ensure 'primary key' is unique (gpu_uuid & timestamp)
         db.gpu_polling.update_one(
             {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]}, 
