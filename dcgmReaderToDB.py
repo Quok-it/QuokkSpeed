@@ -128,6 +128,18 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
             # UUID is missing --> error
             continue
         
+        # get curr time in UTC
+        now = datetime.now(timezone.utc)
+        unix_timestamp = int(now.timestamp())  # convert to unix time
+        
+        # prep GPU data entry
+        gpu_entry = {
+            "gpu_uuid": gpu_uuid,
+            "timestamp": now,  # human-readable time
+            "unix_time": unix_timestamp,  # unix time
+            "metrics_measured": {}
+        }
+        
         # prep data structure
         gpu_entry = {
             "gpu_uuid" : gpu_uuid,
@@ -143,12 +155,15 @@ def DcgmReaderDictionary(field_ids=defaultFieldIds, update_frequency=1000000, ke
                 
         # ensure 'primary key' is unique (gpu_uuid & timestamp)
         db.gpu_polling.update_one(
-            {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]},  # query
-            {"$set": {"metrics_measured": gpu_entry["metrics_measured"]}},  # only update metrics
+            {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]}, 
+            {"$set": {
+                "unix_time": gpu_entry["unix_time"],  # add unix time 
+                "metrics_measured": gpu_entry["metrics_measured"]  # update only metrics
+            }},
             upsert=True  # insert if not found
         )
         
-        print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['timestamp']}")
+        print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['timestamp']} (Unix Time: {gpu_entry['unix_time']})")
 
     # # Print the dictionary
     # for gpuId in data:
