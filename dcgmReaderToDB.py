@@ -22,6 +22,7 @@ import re
 import docker
 import pymongo
 import os
+import sys
 from dotenv import load_dotenv, dotenv_values
 load_dotenv()
 
@@ -31,9 +32,12 @@ from datetime import datetime, timezone
 
 # connect to MongoDB Atlas
 mongo_uri = os.getenv('MONGO_DATABASE')
-print(mongo_uri)
 client = MongoClient(mongo_uri)
 db = client["gpu_monitoring"]
+
+#grab nomad client id
+clientId = sys.argv[0]
+print("clientId: " + str(clientId))
 
 fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NAME,
