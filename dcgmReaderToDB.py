@@ -19,6 +19,7 @@ import time
 import psutil
 import socket
 import re
+import docker
 
 import os
 from dotenv import load_dotenv, dotenv_values
@@ -174,15 +175,19 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
     #         print("For gpu %s field %s=%s" % (str(gpuId), fieldName, data[gpuId][fieldName]))
 
 def getIp():
-    # Regex for wlp
-    wireless_pattern = re.compile(r'(wlan|wifi|^wl)', re.IGNORECASE)
-
-    for iface, addr_list in psutil.net_if_addrs().items():
-        if wireless_pattern.search(iface):
-            for addr in addr_list:
-                if addr.family == socket.AF_INET:
-                    return addr.address
+    client = docker.from_env()
+    # List all running containers
+    containers = client.containers.list()
+    prefix = "dcgm-daemon"
+    for container in containers:
+        # container.name typically returns something like "dcgm-daemon.<nomad_alloc>" 
+        if container.name.startswith(prefix):
+            ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
+            print(f"Found container '{container.name}' with IP: {ip}")
+            return ip
+    print(f"No container found with prefix '{prefix}'")
     return None
+
 
 def main(): 
     print('Quokking...')
