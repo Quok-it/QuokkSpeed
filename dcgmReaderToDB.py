@@ -31,6 +31,7 @@ from datetime import datetime, timezone
 
 # connect to MongoDB Atlas
 mongo_uri = os.getenv('MONGO_DATABASE')
+print(mongo_uri)
 client = MongoClient(mongo_uri)
 db = client["gpu_monitoring"]
 
