@@ -156,8 +156,8 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 gpu_entry["metrics_measured"][fieldName] = latest_value
 
         # Compute FB_UTIL (Framebuffer Utilization)
-        fb_used = gpu_entry["metrics_measured"].get("framebuffer_used", None)
-        fb_total = gpu_entry["metrics_measured"].get("framebuffer_total", None)
+        fb_used = float(gpu_entry["metrics_measured"].get("framebuffer_used", 1))
+        fb_total = float(gpu_entry["metrics_measured"].get("framebuffer_total", 1))
 
         print(f"FB_UTIL Calculated: ", round(fb_used / fb_total))
         # if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
