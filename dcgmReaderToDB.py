@@ -22,7 +22,7 @@ import re
 import docker
 import pymongo
 import os
-import sys
+import argparse
 from dotenv import load_dotenv, dotenv_values
 load_dotenv()
 
@@ -34,10 +34,6 @@ from datetime import datetime, timezone
 mongo_uri = os.getenv('MONGO_DATABASE')
 client = MongoClient(mongo_uri)
 db = client["gpu_monitoring"]
-
-#grab nomad client id
-clientId = sys.argv[0]
-print("clientId: " + str(clientId))
 
 fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NAME,
@@ -165,6 +161,8 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
         fb_total = gpu_entry["metrics_measured"].get("fb_total", None)
         print(f"fb_used: ", fb_used)
         print(f"fb_total: ", fb_total)
+        clientId = getClientId()
+        print("clientId: " + str(clientId))
 
         print(f"fb_util Calculated: ", (100 * round(fb_used / fb_total, 2)))
         if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
@@ -175,7 +173,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
         # ensure 'primary key' is unique (gpu_uuid & timestamp)
         try:
             success = db.gpu_polling.update_one(
-                {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]}, 
+                {"gpu_uuid": gpu_entry["gpu_uuid"], "clientId" : clientId, "timestamp": gpu_entry["timestamp"]}, 
                 {"$set": {
                     "unix_time": gpu_entry["unix_time"],  # add unix time 
                     "metrics_measured": gpu_entry["metrics_measured"]  # update only metrics
@@ -206,6 +204,16 @@ def getIp():
     print(f"No container found with prefix '{prefix}'")
     return None
 
+# get client id!!! Passed in via the hcl jobspec
+
+def getClientId():
+    parser = argparse.ArgumentParser(description="DCGM Reader to DB with Nomad client id")
+    parser.add_argument("--nomadClientId", required=True, help="Nomad client ID")
+    args = parser.parse_args()
+    
+    nomadClientId = args.nomadClientId
+    return nomadClientId
+
 
 def main(): 
     print('Quokking...')
@@ -213,6 +221,9 @@ def main():
     print(hn)
     hostname = hn + ":5555"
     print(hostname)
+
+    clientId = getClientId()
+    print("Nomad Client ID: ", clientId)
     try:
         while True:
             DcgmReaderDictionary(hostname=hostname, field_ids=fieldsToGrab, update_frequency=1000000, keep_time=3600.0, ignores=[], field_groups='dcgm_fieldgroupdata')
