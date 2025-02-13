@@ -20,7 +20,7 @@ import psutil
 import socket
 import re
 import docker
-
+import pymongo
 import os
 from dotenv import load_dotenv, dotenv_values
 load_dotenv()
@@ -168,16 +168,19 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
         # ensure 'primary key' is unique (gpu_uuid & timestamp)
 
         # ensure 'primary key' is unique (gpu_uuid & timestamp)
-        db.gpu_polling.update_one(
-            {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]}, 
-            {"$set": {
-                "unix_time": gpu_entry["unix_time"],  # add unix time 
-                "metrics_measured": gpu_entry["metrics_measured"]  # update only metrics
-            }},
-            upsert=True  # insert if not found
-        )
-        
-        print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['timestamp']} (Unix Time: {gpu_entry['unix_time']})")
+        try:
+            success = db.gpu_polling.update_one(
+                {"gpu_uuid": gpu_entry["gpu_uuid"], "timestamp": gpu_entry["timestamp"]}, 
+                {"$set": {
+                    "unix_time": gpu_entry["unix_time"],  # add unix time 
+                    "metrics_measured": gpu_entry["metrics_measured"]  # update only metrics
+                }},
+                upsert=True  # insert if not found
+            )
+            print(success.matched_count > 0)
+            print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['timestamp']} (Unix Time: {gpu_entry['unix_time']})")
+        except pymongo.errors.PyMongoError as e:
+            print("Failed to update db")
 
     # # Print the dictionary
     # for gpuId in data:
