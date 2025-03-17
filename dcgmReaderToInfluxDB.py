@@ -173,7 +173,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
             
         gpu_point = Point(gpu_entry["measurement"]).tag("clientId",gpu_entry["tags"]["clientId"]).time(gpu_entry["time"]).field("fb_util", gpu_entry["fields"]["fb_util"])
             
-        write_client.write(gpu_point)
+        write_api.write(bucket, org, gpu_point)
         print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['time']}")
 
 def getIp():
