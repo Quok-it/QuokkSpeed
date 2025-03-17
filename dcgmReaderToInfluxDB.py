@@ -169,25 +169,32 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
         # print(f"fb_util Calculated: ", (100 * round(fb_used / fb_total, 2)))
         if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
             gpu_entry["fields"]["fb_util"] = (100 * round(fb_used / fb_total, 2))  # Store as percentage (rounded)
-        try:
-            write_client.write_points(gpu_entry)
             
-            print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['time']}")
-        except pymongo.errors.PyMongoError as e:
-            print("Failed to update db")
+        write_client.write_points(gpu_entry)
+        print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['time']}")
 
 def getIp():
-    client = docker.from_env()
-    # List all running containers
-    containers = client.containers.list()
-    prefix = "dcgm-daemon"
-    for container in containers:
-        # container.name typically returns something like "dcgm-daemon.<nomad_alloc>" 
-        if container.name.startswith(prefix):
-            ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
-            print(f"Found container '{container.name}' with IP: {ip}")
-            return ip
-    print(f"No container found with prefix '{prefix}'")
+    # client = docker.from_env()
+    # # List all running containers
+    # containers = client.containers.list()
+    # prefix = "dcgm-daemon"
+    # for container in containers:
+    #     # container.name typically returns something like "dcgm-daemon.<nomad_alloc>" 
+    #     if container.name.startswith(prefix):
+    #         ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
+    #         print(f"Found container '{container.name}' with IP: {ip}")
+    #         return ip
+    # print(f"No container found with prefix '{prefix}'")
+    # return None
+
+    # Regex for wlp
+    wireless_pattern = re.compile(r'(wlan|wifi|^wl)', re.IGNORECASE)
+
+    for iface, addr_list in psutil.net_if_addrs().items():
+        if wireless_pattern.search(iface):
+            for addr in addr_list:
+                if addr.family == socket.AF_INET:
+                    return addr.address
     return None
 
 # get client id!!! Passed in via the hcl jobspec
