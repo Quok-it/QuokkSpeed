@@ -17,9 +17,11 @@ from DcgmReader import *
 import dcgm_fields
 import time
 import docker
-import pymongo
 import os
 import argparse
+import psutil
+import socket
+import re
 from dotenv import load_dotenv
 load_dotenv()
 
