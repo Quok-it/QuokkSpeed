@@ -32,7 +32,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 from datetime import datetime
 
 # connect to InfluxDB database
-token = os.environ.get("2BKxtdkc6t7G4iUkA6-Iv197sWrA3-sgD-Sp2lk2MUYlGEfDEbXzdJSspLs78toI4vuOrRzBYg0s35s6YoQPLw==") # TODO: how do we not expose this token??
+token = "2BKxtdkc6t7G4iUkA6-Iv197sWrA3-sgD-Sp2lk2MUYlGEfDEbXzdJSspLs78toI4vuOrRzBYg0s35s6YoQPLw==" # TODO: how do we not expose this token??
 org = "quok"
 url = "https://mgxvbj8is7-f3zujj6c2wjkpb.timestream-influxdb.us-east-1.on.aws:8086"
 bucket="db-gpu-polling"
