@@ -24,13 +24,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # sending telemetry to InfluxDB database
-from influxdb import InfluxDBClient
+import influxdb_client, os, time
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 from datetime import datetime
 
-# connect to MongoDB Atlas
-mongo_uri = os.getenv('MONGO_DATABASE')
-client = MongoClient(mongo_uri)
-db = client["gpu_monitoring"]
+# connect to InfluxDB database
+token = os.environ.get("2BKxtdkc6t7G4iUkA6-Iv197sWrA3-sgD-Sp2lk2MUYlGEfDEbXzdJSspLs78toI4vuOrRzBYg0s35s6YoQPLw==") # TODO: how do we not expose this token??
+org = "quok"
+url = "https://mgxvbj8is7-f3zujj6c2wjkpb.timestream-influxdb.us-east-1.on.aws:8086"
+bucket="db-gpu-polling"
+
+write_client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
+write_api = client.write_api(write_options=SYNCHRONOUS)
 
 fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NAME,
@@ -47,7 +53,7 @@ fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NVLINK_BANDWIDTH_TOTAL,
     dcgm_fields.DCGM_FI_DEV_PCIE_TX_THROUGHPUT,
     dcgm_fields.DCGM_FI_DEV_PCIE_RX_THROUGHPUT,
-    #in newest version (4.0) this one is deprecated, it should be DCGM_FI_DEV_CLOCKS_EVENT_REASONS
+    # in newest version (4.0) this one is deprecated, it should be DCGM_FI_DEV_CLOCKS_EVENT_REASONS
     dcgm_fields.DCGM_FI_DEV_CLOCK_THROTTLE_REASONS,
     dcgm_fields.DCGM_FI_DEV_SM_CLOCK,
     dcgm_fields.DCGM_FI_DEV_GPU_UTIL,
@@ -66,12 +72,11 @@ fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NVLINK_CRC_DATA_ERROR_COUNT_TOTAL,
     dcgm_fields.DCGM_FI_DEV_NVLINK_REPLAY_ERROR_COUNT_TOTAL,
     dcgm_fields.DCGM_FI_DEV_NVLINK_RECOVERY_ERROR_COUNT_TOTAL,
-    dcgm_fields.DCGM_FI_DEV_FB_TOTAL,   #framebuffer total
-    dcgm_fields.DCGM_FI_DEV_FB_FREE,    #framebuffer free
-    dcgm_fields.DCGM_FI_DEV_FB_USED,    #framebuffer used
-    dcgm_fields.DCGM_FI_DEV_FB_RESERVED #framebuffer reserved
+    dcgm_fields.DCGM_FI_DEV_FB_TOTAL,   # framebuffer total
+    dcgm_fields.DCGM_FI_DEV_FB_FREE,    # framebuffer free
+    dcgm_fields.DCGM_FI_DEV_FB_USED,    # framebuffer used
+    dcgm_fields.DCGM_FI_DEV_FB_RESERVED # framebuffer reserved
 ]
-
 class FieldHandlerReader(DcgmReader):
     '''
         Override just this method to do something different per field. 
@@ -100,7 +105,7 @@ class DataHandlerReader(DcgmReader):
                 gpuFv = fvs[gpuId]
                 val = gpuFv[fieldId][-1]
 
-                #Skip blank values. Otherwise, we'd have to insert a placeholder blank value based on the fieldId
+                # Skip blank values. Otherwise, we'd have to insert a placeholder blank value based on the fieldId
                 if val.isBlank:
                     continue
 
@@ -134,58 +139,42 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
             # UUID is missing --> error
             continue
         
-        # get curr time in UTC
-        now = datetime.now(timezone.utc)
-        unix_timestamp = int(now.timestamp())  # convert to unix time
+        clientId = getClientId()
         
         # prep GPU data entry
         gpu_entry = {
-            "gpu_uuid": gpu_uuid,
-            "timestamp": now,  # human-readable time
-            "unix_time": unix_timestamp,  # unix time
-            "metrics_measured": {}
+            "measurement": "Hyperbolic", # TODO: abstract this - maybe an env variable?
+            "tags": {
+                "gpu_uuid": gpu_uuid,
+                "clientId": clientId
+            },
+            "time": datetime.now(),
+            "fields": {}
         }
         
-        # store all metrics inside 'metrics_measured'
+        # store all metrics inside 'fields'
         for fieldName, values, in gpuData.items():
             latest_value = values # get most recent value
             # print(fieldName + " : " + latest_value)
             if latest_value not in [None, "", "N/A"]:
-                gpu_entry["metrics_measured"][fieldName] = latest_value
+                gpu_entry["fields"][fieldName] = latest_value
 
         # Compute FB_UTIL (Framebuffer Utilization)
-        fb_used = gpu_entry["metrics_measured"].get("fb_used", None)
-        fb_total = gpu_entry["metrics_measured"].get("fb_total", None)
-        print(f"fb_used: ", fb_used)
-        print(f"fb_total: ", fb_total)
-        clientId = getClientId()
-        print("clientId: " + str(clientId))
+        fb_used = gpu_entry["fields"].get("fb_used", None)
+        fb_total = gpu_entry["fields"].get("fb_total", None)
+        # print(f"fb_used: ", fb_used)
+        # print(f"fb_total: ", fb_total)
+        # print("clientId: " + str(clientId))
 
-        print(f"fb_util Calculated: ", (100 * round(fb_used / fb_total, 2)))
+        # print(f"fb_util Calculated: ", (100 * round(fb_used / fb_total, 2)))
         if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
-            gpu_entry["metrics_measured"]["fb_util"] = (100 * round(fb_used / fb_total, 2))  # Store as percentage (rounded)
-        
-        # ensure 'primary key' is unique (gpu_uuid & timestamp)
-
-        # ensure 'primary key' is unique (gpu_uuid & timestamp)
+            gpu_entry["fields"]["fb_util"] = (100 * round(fb_used / fb_total, 2))  # Store as percentage (rounded)
         try:
-            success = db.gpu_polling.update_one(
-                {"gpu_uuid": gpu_entry["gpu_uuid"], "clientId" : clientId, "timestamp": gpu_entry["timestamp"]}, 
-                {"$set": {
-                    "unix_time": gpu_entry["unix_time"],  # add unix time 
-                    "metrics_measured": gpu_entry["metrics_measured"]  # update only metrics
-                }},
-                upsert=True  # insert if not found
-            )
-            print(success.matched_count > 0)
-            print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['timestamp']} (Unix Time: {gpu_entry['unix_time']})")
+            write_client.write_points(gpu_entry)
+            
+            print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['time']}")
         except pymongo.errors.PyMongoError as e:
             print("Failed to update db")
-
-    # # Print the dictionary
-    # for gpuId in data:
-    #     for fieldName in data[gpuId]:
-    #         print("For gpu %s field %s=%s" % (str(gpuId), fieldName, data[gpuId][fieldName]))
 
 def getIp():
     client = docker.from_env()
