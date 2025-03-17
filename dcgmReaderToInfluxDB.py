@@ -171,9 +171,11 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
         if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
             gpu_entry["fields"]["fb_util"] = (100 * round(fb_used / fb_total, 2))  # Store as percentage (rounded)
             
+        gpu_points = []
         gpu_point = Point(gpu_entry["measurement"]).tag("clientId",gpu_entry["tags"]["clientId"]).time(gpu_entry["time"]).field("fb_util", gpu_entry["fields"]["fb_util"])
+        gpu_points.append(gpu_point)
             
-        write_api.write(bucket, org, gpu_point)
+        write_api.write(bucket, org, gpu_points)
         print(f"Data inserted for GPU: {gpu_uuid} at {gpu_entry['time']}")
 
 def getIp():
