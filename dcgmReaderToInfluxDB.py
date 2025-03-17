@@ -36,7 +36,7 @@ url = "https://mgxvbj8is7-f3zujj6c2wjkpb.timestream-influxdb.us-east-1.on.aws:80
 bucket="db-gpu-polling"
 
 write_client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
-write_api = client.write_api(write_options=SYNCHRONOUS)
+write_api = write_client.write_api(write_options=SYNCHRONOUS)
 
 fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NAME,
