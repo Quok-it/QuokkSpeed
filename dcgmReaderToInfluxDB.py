@@ -202,6 +202,9 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 
                 # store all metrics inside 'fields'
                 for fieldName, latest_value, in gpuData.items():
+                    if fieldName is "name" or "brand" or "uuid":
+                        point.tag(fieldName, str(latest_value))
+                    
                     # print(fieldName + " : " + latest_value)
                     if latest_value not in [None, "", "N/A"]: 
                         try:
