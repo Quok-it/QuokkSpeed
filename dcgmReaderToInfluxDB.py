@@ -202,6 +202,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 
                 # store all metrics inside 'fields'
                 for fieldName, latest_value, in gpuData.items():
+                    print(fieldName)
                     if fieldName is "name" or "brand" or "uuid":
                         point.tag(fieldName, str(latest_value))
                     
@@ -241,6 +242,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                     
                 # set timestamp
                 point.time(datetime.now())
+                print(datetime.now())
                     
                 # write to influx
                 if write_api:
