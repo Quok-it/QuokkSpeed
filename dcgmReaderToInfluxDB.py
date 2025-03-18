@@ -202,8 +202,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 
                 # store all metrics inside 'fields'
                 for fieldName, latest_value, in gpuData.items():
-                    print(fieldName)
-                    if fieldName is "name" or "brand" or "uuid":
+                    if fieldName == "name" or fieldName == "brand" or fieldName == "uuid":
                         point.tag(fieldName, str(latest_value))
                     
                     # print(fieldName + " : " + latest_value)
@@ -221,10 +220,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                         except (ValueError, TypeError):
                             # otherwise, keep as string (should all be nums though)
                             point.field(fieldName, str(latest_value))
-                        print(fieldName)
-                        print(latest_value)
-                        print(type(latest_value))
-
+                            
                 # Compute FB_UTIL (Framebuffer Utilization)
                 fb_used = gpuData.get("fb_used")
                 fb_total = gpuData.get("fb_total")
@@ -242,7 +238,9 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                     
                 # set timestamp
                 point.time(datetime.now())
-                print(datetime.now())
+                
+                line_protocol = point._write_precision
+                print(f"Line Protocol: {line_protocol}")
                     
                 # write to influx
                 if write_api:
