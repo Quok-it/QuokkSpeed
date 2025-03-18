@@ -219,8 +219,8 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                             point.field(fieldName, str(latest_value))
 
                 # Compute FB_UTIL (Framebuffer Utilization)
-                fb_used = gpu_entry["fields"].get("fb_used", None)
-                fb_total = gpu_entry["fields"].get("fb_total", None)
+                fb_used = gpuData.get("fb_used")
+                fb_total = gpuData.get("fb_total")
                 # print(f"fb_used: ", fb_used)
                 # print(f"fb_total: ", fb_total)
                 # print("clientId: " + str(clientId))
