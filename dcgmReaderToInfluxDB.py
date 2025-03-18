@@ -239,7 +239,8 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 # set timestamp
                 point.time(datetime.now())
                 
-                line_protocol = point._write_precision
+                from influxdb_client.client.write.point import DEFAULT_WRITE_PRECISION
+                line_protocol = point.to_line(write_precision=DEFAULT_WRITE_PRECISION)
                 print(f"Line Protocol: {line_protocol}")
                     
                 # write to influx
