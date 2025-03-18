@@ -202,9 +202,10 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 
                 # store all metrics inside 'fields'
                 for fieldName, latest_value, in gpuData.items():
-                    if fieldName == "name" or fieldName == "brand" or fieldName == "uuid":
+                    if fieldName == "name" or fieldName == "brand":
                         point.tag(fieldName, str(latest_value))
-                    
+                    elif fieldName == "uuid":
+                        continue
                     # print(fieldName + " : " + latest_value)
                     elif latest_value not in [None, "", "N/A"]: 
                         try:
@@ -239,9 +240,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 # set timestamp
                 point.time(datetime.now())
                 
-                from influxdb_client.client.write.point import DEFAULT_WRITE_PRECISION
-                line_protocol = point.to_line(write_precision=DEFAULT_WRITE_PRECISION)
-                print(f"Line Protocol: {line_protocol}")
+                # print(f"Line Protocol: {point}")
                     
                 # write to influx
                 if write_api:
