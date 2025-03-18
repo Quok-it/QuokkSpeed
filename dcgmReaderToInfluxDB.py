@@ -217,6 +217,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                         except (ValueError, TypeError):
                             # otherwise, keep as string (should all be nums though)
                             point.field(fieldName, str(latest_value))
+                        print(fieldName)
                         print(latest_value)
                         print(type(latest_value))
 
