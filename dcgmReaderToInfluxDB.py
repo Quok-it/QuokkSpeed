@@ -29,7 +29,7 @@ load_dotenv()
 import influxdb_client
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
-from datetime import datetime
+from datetime import datetime, timezone
 
 # connect to InfluxDB database
 token = os.getenv('INFLUX_TOKEN') 
@@ -238,7 +238,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                     point.field("fb_util", round(fb_util, 2)) # Store as percentage (rounded)
                     
                 # set timestamp
-                point.time(datetime.now())
+                point.time(datetime.now(timezone.utc))
                 
                 # print(f"Line Protocol: {point}")
                     
