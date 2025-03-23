@@ -45,9 +45,9 @@ vm_connected = False
 
 # try to connect to Victoria Metrics endpoint
 def test_vm_connection():
-    print("IN TEST_VM_CONNECTION")
     try:
         response = requests.get(f"{vm_url}/health", auth=authentication, timeout=10)
+        print("IN TEST_VM_CONNECTION TRY")
         if response.status_code == 200:
             print("Successfully connected to Victoria Metrics")
             return True
