@@ -30,7 +30,7 @@ load_dotenv()
 
 # sending telemetry to Victoria Metrics database
 vm_url = os.getenv('VM_URL')
-write_endpoint = "/write" # this is the InfluxDB line protocol endpoint
+write_endpoint = "/api/v2/write" # this is the InfluxDB line protocol endpoint
 precision = 'ms' # precision for time --> TODO: ms for now
 vm_write_url = f"{vm_url}{write_endpoint}?precision={precision}" 
 
@@ -71,6 +71,9 @@ def send_data_to_vm(lines):
     try:
         # join all the metrics
         entire_payload = "\n".join(lines)
+        
+        print("entire payload")
+        print(entire_payload)
         
         # compress payload with gzip
         compressed_payload = gzip.compress(entire_payload.encode('utf-8'))
@@ -223,9 +226,9 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 
                 # store name and brand as tags
                 if "name" in gpuData and gpuData["name"] not in [None, "", "N/A"]:
-                    tags += f",name={gpuData["name"]}"
+                    tags += f",name={gpuData['name']}"
                 if "brand" in gpuData and gpuData["brand"] not in [None, "", "N/A"]:
-                    tags += f",brand={gpuData["brand"]}"
+                    tags += f",brand={gpuData['brand']}"
                     
                 # collect field data
                 fields = []
