@@ -219,7 +219,7 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 clientId = getClientId()
                 
                 # prep GPU data entry with line protocol
-                # format: <measurement>,<tags> <fields> [timestamp]
+                # format: <measurement>,<tags> <fields> 
                 measurement = gpu_uuid
                 
                 tags = f"clientId={clientId}"
@@ -266,10 +266,10 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                     fields.append(f"fb_util={round(fb_util, 2)}") # Store as percentage (rounded)
                     
                 if fields:
-                    # set timestamp
-                    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
+                    # # set timestamp
+                    # timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
                     
-                    line = f"{measurement},{tags} {','.join(fields)} {timestamp}"
+                    line = f"{measurement},{tags} {','.join(fields)}"
                     lines.append(line)
                     
             except Exception as e:
