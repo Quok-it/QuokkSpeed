@@ -35,15 +35,17 @@ precision = 'ms' # precision for time --> TODO: ms for now
 vm_write_url = f"{vm_url}{write_endpoint}?precision={precision}" 
 
 # TODO: potentially use authentication (more secure)
-vm_user = os.getenv('VM_USER')
-vm_password = os.getenv('VM_PASSWORD')
-authentication = (vm_user, vm_password)
+# vm_user = os.getenv('VM_USER')
+# vm_password = os.getenv('VM_PASSWORD')
+# authentication = (vm_user, vm_password)
+authentication = None
 
 # connection status
 vm_connected = False
 
 # try to connect to Victoria Metrics endpoint
 def test_vm_connection():
+    print("IN TEST_VM_CONNECTION")
     try:
         response = requests.get(f"{vm_url}/health", auth=authentication, timeout=10)
         if response.status_code == 200:
