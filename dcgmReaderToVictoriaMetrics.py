@@ -1,4 +1,4 @@
-# RUN USING: python3 dcgmReaderToDB.py
+# RUN USING: python3 dcgmReaderToVictoriaMetrics.py
 
 # Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
 #
@@ -22,43 +22,86 @@ import argparse
 import sys
 import socket
 import re
+import requests
+import gzip
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 load_dotenv()
 
-# sending telemetry to InfluxDB database
-import influxdb_client
-from influxdb_client import InfluxDBClient, Point, WritePrecision
-from influxdb_client.client.write_api import SYNCHRONOUS
-from datetime import datetime, timezone
+# sending telemetry to Victoria Metrics database
+vm_url = os.getenv('VM_URL')
+write_endpoint = "/write" # this is the InfluxDB line protocol endpoint
+precision = 'ms' # precision for time --> TODO: ms for now
+vm_write_url = f"{vm_url}{write_endpoint}?precision={precision}" 
 
-# connect to InfluxDB database
-token = os.getenv('INFLUX_TOKEN') 
-org = "quok"
-bucket="db-gpu-polling"
+# TODO: potentially use authentication (more secure)
+vm_user = os.getenv('VM_USER')
+vm_password = os.getenv('VM_PASSWORD')
+authentication = (vm_user, vm_password)
 
-url = os.getenv('INFLUX_URL') 
+# connection status
+vm_connected = False
 
-# try to connect to InfluxDB client
-try:
-    write_client = influxdb_client.InfluxDBClient(
-        url=url, 
-        token=token, 
-        org=org,
-        timeout=30_000  # 30 sec timeout
-    )
+# try to connect to Victoria Metrics endpoint
+def test_vm_connection():
+    try:
+        response = requests.get(f"{vm_url}/health", auth=authentication, timeout=10)
+        if response.status_code == 200:
+            print("Successfully connected to Victoria Metrics")
+            return True
+        else:
+            print(f"Connection to Victoria Metrics failed with status code: {response.status_code} --> {response.text}")
+            return False
+        
+    except Exception as e:
+        print(f"Error connecting to Victoria Metrics: {str(e)}")
+        return False
+        
+vm_connected = test_vm_connection()
+
+# function to send batched data to Victoria Metrics with gzip compression
+def send_data_to_vm(lines):
+    global vm_connected
     
-    # test connection
-    print("Testing InfluxDB connection...")
-    health = write_client.health()
-    print(f"InfluxDB health status: {health.status}")
+    if not lines:
+        return False
     
-    # set up write API
-    write_api = write_client.write_api(write_options=SYNCHRONOUS)
-    
-except Exception as e:
-    print(f"Error connecting to InfluxDB: {str(e)}")
-    write_client = None
-    write_api = None
+    try:
+        # join all the metrics
+        entire_payload = "\n".join(lines)
+        
+        # compress payload with gzip
+        compressed_payload = gzip.compress(entire_payload.encode('utf-8'))
+        
+        # send with headers
+        headers = {
+            'Content-Type': 'text/plain',
+            'Content-Encoding': 'gzip'
+        }
+        
+        # send request
+        response = requests.post(
+            vm_write_url,
+            data=compressed_payload,
+            headers=headers,
+            auth=authentication,
+            timeout=10
+        )
+        
+        if response.status_code < 400:
+            print("Successfully sent data to Victoria Metrics")
+            return True
+        else:
+            print("Did not successfully send data to Victoria Metrics")
+            print(f"{response.status_code} --> {response.text}")
+            vm_connected = False # disconnect bcs didn't successfully connect
+            return False
+        
+    except Exception as e:
+        print(f"Error sending data to Victoria Metrics: {str(e)}")
+        vm_connected = False # disconnect bcs didn't successfully connect
+        return False
+        
 
 fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_NAME,
@@ -100,36 +143,6 @@ fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_FB_RESERVED # framebuffer reserved
 ]
 
-# try to reconnect to InfluxDB if lost connection / didn't connect
-def reconnect_influxdb():
-    global write_client, write_api
-    
-    try:
-        print("Attempting to reconnect to InfluxDB...")
-        write_client = influxdb_client.InfluxDBClient(
-            url=url, 
-            token=token, 
-            org=org,
-            timeout=30_000
-        )
-        write_api = write_client.write_api(write_options=SYNCHRONOUS)
-        health = write_client.health()
-        print(f"Reconnection status: {health.status}")
-        return True
-    except Exception as e:
-        print(f"Reconnection failed: {e}")
-        return False
-class FieldHandlerReader(DcgmReader):
-    '''
-        Override just this method to do something different per field. 
-        This method is called once for each field for each GPU each 
-        time that its Process() method is invoked, and it will be skipped
-        for blank values and fields in the ignore list.
-    '''
-    def CustomFieldHandler(self, gpuId, fieldId, fieldTag, val):
-        curr_dict[gpuId] = val.value
-        print('GPU %d %s(%d) = %s' % (gpuId, fieldTag, fieldId, val.value))
-
 class DataHandlerReader(DcgmReader):
     '''
         Override just this method to handle the entire map of data in your own way. This 
@@ -166,7 +179,7 @@ class DataHandlerReader(DcgmReader):
     ignores          : List of the field ids we want to query but not publish.
 '''
 def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignores, field_groups):
-    global write_client, write_api
+    global vm_connected
     
     try:
         # Instantiate a DcgmReader object
@@ -186,6 +199,9 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
             print("No data received from dcgm :(")
             return
         
+        # get line protocol strings to batch send
+        lines = []
+        
         for gpuId, gpuData in data.items():
             gpu_uuid = gpuData.get("uuid", None)
             # print("gpu_uuid: ", gpu_uuid)
@@ -197,37 +213,44 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
             try:
                 clientId = getClientId()
                 
-                # prep GPU data entry                
-                point = Point(gpu_uuid).tag("clientId", clientId)
+                # prep GPU data entry with line protocol
+                # format: <measurement>,<tags> <fields> [timestamp]
+                measurement = gpu_uuid
+                
+                tags = f"clientId={clientId}"
+                
+                # store name and brand as tags
+                if "name" in gpuData and gpuData["name"] not in [None, "", "N/A"]:
+                    tags += f",name={gpuData["name"]}"
+                if "brand" in gpuData and gpuData["brand"] not in [None, "", "N/A"]:
+                    tags += f",brand={gpuData["brand"]}"
+                    
+                # collect field data
+                fields = []
                 
                 # store all metrics inside 'fields'
                 for fieldName, latest_value, in gpuData.items():
-                    if fieldName == "name" or fieldName == "brand":
-                        point.tag(fieldName, str(latest_value))
-                    elif fieldName == "uuid":
+                    if fieldName in ["uuid", "name", "brand"] or latest_value in [None, "", "N/A"]:
                         continue
-                    # print(fieldName + " : " + latest_value)
-                    elif latest_value not in [None, "", "N/A"]: 
-                        try:
-                            # try to convert numerical strings to accepted type
-                            if isinstance(latest_value, str):
-                                if latest_value.replace('.', '', 1).isdigit():
-                                    if '.' in latest_value:
-                                        latest_value = float(latest_value)
-                                    else:
-                                        latest_value = int(latest_value)
-                            # add field to point
-                            point.field(fieldName, latest_value)
-                        except (ValueError, TypeError):
-                            # otherwise, keep as string (should all be nums though)
-                            point.field(fieldName, str(latest_value))
+                    
+                    try:
+                        # try to convert numerical strings to accepted type
+                        if isinstance(latest_value, str):
+                            if latest_value.replace('.', '', 1).isdigit():
+                                if '.' in latest_value:
+                                    latest_value = float(latest_value)
+                                else:
+                                    latest_value = int(latest_value)
+                                    
+                        # append to fields set
+                        fields.append(f"{fieldName}={latest_value}")
+                    except (ValueError, TypeError):
+                        # otherwise, keep as string (should all be nums though)
+                        fields.append(f"{fieldName}={str(latest_value)}")
                             
                 # Compute FB_UTIL (Framebuffer Utilization)
                 fb_used = gpuData.get("fb_used")
                 fb_total = gpuData.get("fb_total")
-                # print(f"fb_used: ", fb_used)
-                # print(f"fb_total: ", fb_total)
-                # print("clientId: " + str(clientId))
 
                 # print(f"fb_util Calculated: ", (100 * round(fb_used / fb_total, 2)))
                 if fb_used is not None and fb_total not in [None, 0]:  # Avoid division by zero
@@ -235,34 +258,24 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                     fb_total = float(fb_total) if isinstance(fb_total, str) else fb_total
                     
                     fb_util = 100 * (fb_used / fb_total)
-                    point.field("fb_util", round(fb_util, 2)) # Store as percentage (rounded)
+                    fields.append(f"fb_util={round(fb_util, 2)}") # Store as percentage (rounded)
                     
-                # set timestamp
-                point.time(datetime.now(timezone.utc))
-                
-                # print(f"Line Protocol: {point}")
+                if fields:
+                    # set timestamp
+                    timestamp = int(datetime.now(timezone.utc).timestamp() * 1000)
                     
-                # write to influx
-                if write_api:
-                    try:
-                        write_api.write(bucket=bucket, org=org, record=point)
-                        print(f"Data inserted for GPU: {gpu_uuid}")
-                    except Exception as e:
-                        print(f"Error writing to InfluxDB: {e}")
-                        # try to reconnect
-                        if reconnect_influxdb():
-                            # try writing again after reconnection
-                            try:
-                                write_api.write(bucket=bucket, org=org, record=point)
-                                print(f"Data inserted after reconnection for GPU: {gpu_uuid}")
-                            except Exception as e2:
-                                print(f"Still failed after reconnection: {e2}")
-                else:
-                    print("InfluxDB client not initialized, attempting to reconnect...")
-                    reconnect_influxdb()
+                    line = f"{measurement},{tags} {','.join(fields)} {timestamp}"
+                    lines.append(line)
                     
             except Exception as e:
                 print(f"Error processing GPU {gpuId}: {e}")
+                
+        # send batch data
+        if lines:
+            if vm_connected:
+                send_data_to_vm(lines)
+            else:
+                print("Not connected to VM")
                 
     except Exception as e:
         print(f"Error in DcgmReaderDictionary: {e}")
@@ -313,8 +326,6 @@ def main():
     except KeyboardInterrupt:
         print('quokked!')
     
-
-
 
 if __name__ == '__main__':
     main()
