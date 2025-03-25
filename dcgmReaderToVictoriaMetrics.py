@@ -226,10 +226,10 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 
                 # store name and brand as tags
                 if "name" in gpuData and gpuData["name"] not in [None, "", "N/A"]:
-                    name_value = str(gpuData["name"]).replace(" ","\\ ").replace(",","\\,").replace("=","\\=")
+                    name_value = str(gpuData["name"]).replace(" ","_").replace(",","_").replace("=","_")
                     tags += f",name={name_value}"
                 if "brand" in gpuData and gpuData["brand"] not in [None, "", "N/A"]:
-                    brand_value = str(gpuData["name"]).replace(" ","\\ ").replace(",","\\,").replace("=","\\=")
+                    brand_value = str(gpuData["name"]).replace(" ","_").replace(",","_").replace("=","_")
                     tags += f",brand={brand_value}"
                     
                 # collect field data
