@@ -43,6 +43,8 @@ authentication = None
 # connection status
 vm_connected = False
 
+vmFailCount = 0
+
 # try to connect to Victoria Metrics endpoint
 def test_vm_connection():
     try:
@@ -185,7 +187,9 @@ class DataHandlerReader(DcgmReader):
 '''
 def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignores, field_groups):
     global vm_connected
-    
+    global vmFailCount
+    if vmFailCount > 10:
+        sys.exit("vm failed too many times.")
     try:
         # Instantiate a DcgmReader object
         dr = DcgmReader(
@@ -283,6 +287,10 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
                 send_data_to_vm(lines)
             else:
                 print("Not connected to VM")
+                vmFailCount += 1
+                if (vmFailCount > 10):
+                    raise RuntimeError("Failed to connect to VM! Failing Poller")
+                    perror("VM Failed")
                 
     except Exception as e:
         print(f"Error in DcgmReaderDictionary: {e}")
