@@ -284,10 +284,12 @@ def DcgmReaderDictionary(hostname, field_ids, update_frequency, keep_time, ignor
         # send batch data
         if lines:
             if vm_connected:
+                vmFailCount = 0
                 send_data_to_vm(lines)
             else:
                 print("Not connected to VM")
                 vmFailCount += 1
+                vm_connected = test_vm_connection()
                 if (vmFailCount > 10):
                     raise RuntimeError("Failed to connect to VM! Failing Poller")
                     perror("VM Failed")
