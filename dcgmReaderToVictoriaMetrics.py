@@ -147,7 +147,18 @@ fieldsToGrab = [
     dcgm_fields.DCGM_FI_DEV_FB_TOTAL,   # framebuffer total
     dcgm_fields.DCGM_FI_DEV_FB_FREE,    # framebuffer free
     dcgm_fields.DCGM_FI_DEV_FB_USED,    # framebuffer used
-    dcgm_fields.DCGM_FI_DEV_FB_RESERVED # framebuffer reserved
+    dcgm_fields.DCGM_FI_DEV_FB_RESERVED, # framebuffer reserved
+    dcgm_fields.DCGM_FI_DEV_MEM_MAX_OP_TEMP,
+    dcgm_fields.DCGM_FI_DEV_GPU_MAX_OP_TEMP,
+    dcgm_fields.DCGM_FI_DEV_SLOWDOWN_TEMP,
+    dcgm_fields.DCGM_FI_DEV_POWER_MGMT_LIMIT,
+    dcgm_fields.DCGM_FI_DEV_POWER_MGMT_LIMIT_DEF,
+    dcgm_fields.DCGM_FI_DEV_ENFORCED_POWER_LIMIT,
+    dcgm_fields.DCGM_FI_DEV_VIDEO_CLOCK,
+    dcgm_fields.DCGM_FI_DEV_MAX_SM_CLOCK,
+    dcgm_fields.DCGM_FI_DEV_MAX_MEM_CLOCK,
+    dcgm_fields.DCGM_FI_DEV_MAX_VIDEO_CLOCK,
+    dcgm_fields.DCGM_FI_DEV_FAN_SPEED
 ]
 
 class DataHandlerReader(DcgmReader):
