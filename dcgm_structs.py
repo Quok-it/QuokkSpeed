@@ -586,13 +586,13 @@ def _LoadDcgmLibrary(libDcgmPath=None):
                 else:
                     libPaths = []
                     if libDcgmPath:
-                        libPaths.append(os.path.join(libDcgmPath, "libdcgm.so.3"))
+                        libPaths.append(os.path.join(libDcgmPath, "libdcgm.so.4"))
                     if 'LD_LIBRARY_PATH' in os.environ:
                         envLibPaths = os.environ['LD_LIBRARY_PATH'].split(':')
                         for envLibPath in envLibPaths:
-                            libPaths.append('{}/libdcgm.so.3'.format(envLibPath))
-                    libPaths.append('/usr/lib/{}-linux-gnu/libdcgm.so.3'.format(platform.machine()))
-                    libPaths.append('/usr/lib64/libdcgm.so.3')
+                            libPaths.append('{}/libdcgm.so.4'.format(envLibPath))
+                    libPaths.append('/usr/lib/{}-linux-gnu/libdcgm.so.4'.format(platform.machine()))
+                    libPaths.append('/usr/lib64/libdcgm.so.4')
 
                     for lib_file in libPaths:
                         if os.path.isfile(lib_file):
